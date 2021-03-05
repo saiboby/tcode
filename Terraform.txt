@@ -1,0 +1,23 @@
+https://www.terraform.io/docs/configuration/locals.html
+https://blog.gruntwork.io/terraform-tips-tricks-loops-if-statements-and-gotchas-f739bbae55f9
+https://www.terraform.io/docs/configuration/resources.html
+https://upcloud.com/community/tutorials/terraform-variables/  --> variables
+
+https://www.terraform.io/docs/configuration/expressions.html  #expression
+https://blog.gruntwork.io/terraform-tips-tricks-loops-if-statements-and-gotchas-f739bbae55f9  # conditin expression
+
+https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/latest
+
+
+If you're familiar with traditional programming languages, it can be useful to compare Terraform modules to function definitions:
+
+Input variables are like function arguments.
+Output values are like function return values.
+Local values are like a function's temporary local variables
+
+https://www.terraform.io/docs/configuration/expressions.html
+
+https://learn.hashicorp.com/tutorials/terraform/count
+
+
+datasources = https://www.youtube.com/watch?v=9cDDZzl7zow
