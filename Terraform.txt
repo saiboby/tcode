@@ -21,3 +21,5 @@ https://learn.hashicorp.com/tutorials/terraform/count
 
 
 datasources = https://www.youtube.com/watch?v=9cDDZzl7zow
+
+dynamic output values reading --> https://stackoverflow.com/questions/50835636/accessing-terraform-variables-within-user-data-provider-template-file
