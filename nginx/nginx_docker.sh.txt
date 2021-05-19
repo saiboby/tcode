@@ -2,151 +2,58 @@
 # to install the nginx internal reverse proxy
 # modified 2021-04-28 Jujhar to dockerify thingssu
 
+ 
+
+
 # Installing docker and enable
 sudo apt-get update -y
 sudo apt-get install -y docker.io
 sudo systemctl enable docker
 sudo systemctl start docker
 
+ 
+
 # enable this user to docker without sudo (will have to logout to take effect for next round)
 sudo usermod -a -G docker "${USER}"
 
-sudo docker pull nginx:1.19
+ 
 
-cat <<EOF > /home/ubuntu/nginx.conf
-user www-data;
-worker_processes auto;
-pid /run/nginx.pid;
-include /etc/nginx/modules-enabled/*.conf;
+# we need to grab an nginx default conf as our base template
+# simply grab it form a vanilla docker nginx container
+dockerId=$(sudo docker run -d nginx)
+sleep 1s
+sudo docker cp "${dockerId}":/etc/nginx/nginx.conf /etc/nginx.conf
+sudo docker cp "${dockerId}":/etc/nginx/conf.d/default.conf /etc/default.conf
 
-events {
-        worker_connections 768;
-        # multi_accept on;
-}
+sudo docker kill "${dockerId}"
 
-http {
+ 
 
-        ##
-        # Basic Settings
-        ##
-
-        sendfile on;
-        tcp_nopush on;
-        tcp_nodelay on;
-        keepalive_timeout 65;
-        types_hash_max_size 2048;
-        # server_tokens off;
-
-        # server_names_hash_bucket_size 64;
-        # server_name_in_redirect off;
-
-        include /etc/nginx/mime.types;
-        default_type application/octet-stream;
-
-        ##
-        # SSL Settings
-        ##
-
-        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # Dropping SSLv3, ref: POODLE
-        ssl_prefer_server_ciphers on;
-
-        ##
-        # Logging Settings
-        ##
-
-        access_log /var/log/nginx/access.log;
-        error_log /var/log/nginx/error.log;
-
-        ##
-        # Gzip Settings
-        ##
-
-        gzip on;
-
-        # gzip_vary on;
-        # gzip_proxied any;
-        # gzip_comp_level 6;
-        # gzip_buffers 16 8k;
-        # gzip_http_version 1.1;
-        # gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-
-        ##
-        # Virtual Host Configs
-        ##
-
-        include /etc/nginx/conf.d/*.conf;
-        include /etc/nginx/sites-enabled/*;
-        upstream apachecluster1 {
-        server 13.232.30.159;
-        }
-
-        upstream apachecluster2 {
-        server 3.7.68.96;
-        }
-}
-
-
-#mail {
-#       # See sample authentication script at:
-#       # http://wiki.nginx.org/ImapAuthenticateWithApachePhpScript
-#
-#       # auth_http localhost/auth.php;
-#       # pop3_capabilities "TOP" "USER";
-#       # imap_capabilities "IMAP4rev1" "UIDPLUS";
-#
-#       server {
-#               listen     localhost:110;
-#               protocol   pop3;
-#               proxy      on;
-#       }
-#
-#       server {
-#               listen     localhost:143;
-#               protocol   imap;
-#               proxy      on;
-#       }
-#}
+# now modify nginx.conf to merge in upstream servers conf in the 'http' section
+sudo cat <<EOF > ./upstream.conf.template
+    # upstream application servers
+    # have to be added in main conf as FOSS nginx doesn't support dynamic lookups
+    upstream app {
+        server 13.235.128.140:8082;
+        
+    }
+ 
 EOF
 
-cat <<EOF > /home/ubuntu/default
-# You should look at the following URL's in order to grasp a solid understanding
-# of Nginx configuration files in order to fully unleash the power of Nginx.
-# https://www.nginx.com/resources/wiki/start/
-# https://www.nginx.com/resources/wiki/start/topics/tutorials/config_pitfalls/
-# https://wiki.debian.org/Nginx/DirectoryStructure
-#
-# In most cases, administrators will remove this file from sites-enabled/ and
-# leave it as reference inside of sites-available where it will continue to be
-# updated by the nginx packaging team.
-#
-# This file will automatically load configuration files provided by other
-# applications, such as Drupal or Wordpress. These applications will be made
-# available underneath a path with that package name, such as /drupal8.
-#
-# Please see /usr/share/doc/nginx-doc/examples/ for more detailed examples.
-##
+ 
 
-# Default server configuration
-#
+# now use some sed magic to munge the two files
+# first create a placeholder 'tag' then munge the files using the 'r' feature of sed
+sudo sed -i 's/http {/http { \n#FROM_UPSTREAM_TEMPLATE/' /etc/nginx.conf
+sudo sed -ie '/#FROM_UPSTREAM_TEMPLATE/rupstream.conf.template' /etc/nginx.conf
+
+ 
+
+# our virtualhosts configuration to inject in
+cat <<EOF > ./nginx-default.conf
 server {
         listen 80 default_server;
         listen [::]:80 default_server;
-
-        # SSL configuration
-        #
-        # listen 443 ssl default_server;
-        # listen [::]:443 ssl default_server;
-        #
-        # Note: You should disable gzip for SSL traffic.
-        # See: https://bugs.debian.org/773332
-        #
-        # Read up on ssl_ciphers to ensure a secure configuration.
-        # See: https://bugs.debian.org/765782
-        #
-        # Self signed certs generated by the ssl-cert package
-        # Don't use them in a production server!
-        #
-        # include snippets/snakeoil.conf;
 
         root /var/www/html;
 
@@ -156,65 +63,30 @@ server {
         server_name _;
 
         location / {
-                # First attempt to serve request as file, then
-                # as directory, then fall back to displaying a 404.
-                try_files $uri $uri/ =404;
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+		}
+
+
+        location /app {
+                proxy_pass http://app;
         }
-
-        location /app1 {
-                proxy_pass http://apachecluster1;
-        }
-
-        location /app2 {
-                proxy_pass http://apachecluster2;
-        }
-
-        # pass PHP scripts to FastCGI server
-        #
-        #location ~ \.php$ {
-        #       include snippets/fastcgi-php.conf;
-        #
-        #       # With php-fpm (or other unix sockets):
-        #       fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
-        #       # With php-cgi (or other tcp sockets):
-        #       fastcgi_pass 127.0.0.1:9000;
-        #}
-
-        # deny access to .htaccess files, if Apache's document root
-        # concurs with nginx's one
-        #
-        #location ~ /\.ht {
-        #       deny all;
-        #}
 }
 
 
-# Virtual Host configuration for example.com
-#
-# You can move that to a different file under sites-available/ and symlink that
-# to sites-enabled/ to enable it.
-#
-#server {
-#       listen 80;
-#       listen [::]:80;
-#
-#       server_name example.com;
-#
-#       root /var/www/example.com;
-#       index index.html;
-#
-#       location / {
-#               try_files $uri $uri/ =404;
-#       }
-#}
-
 EOF
 
+ 
 
+sudo cp nginx-default.conf /etc/nginx-default.conf
+
+ 
+
+# now inject these configs into a nginx container running as a background service
 sudo docker run \
     -d \
     -p 80:80 \
     --restart=always \
-    -v /home/ubuntu/nginx.conf:/etc/nginx/nginx.conf:ro \
-    -v /home/ubuntu/default:/etc/nginx/sites-enabled/default.conf:ro \
+    -v /etc/nginx.conf:/etc/nginx/nginx.conf:ro \
+    -v /etc/nginx-default.conf:/etc/nginx/conf.d/default.conf:ro \
     nginx:1.19
