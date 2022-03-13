@@ -25,3 +25,6 @@ datasources = https://www.youtube.com/watch?v=9cDDZzl7zow
 dynamic output values reading --> https://stackoverflow.com/questions/50835636/accessing-terraform-variables-within-user-data-provider-template-file
 
 terraform apply -auto-approve -target=module.subnet.aws_internet_gateway.myigw . (to execute a single resource from a module)
+
+
+terraform output values list ---> https://registry.terraform.io/modules/terraform-aws-modules/ec2-instance/aws/latest
