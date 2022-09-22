@@ -28,3 +28,30 @@ terraform apply -auto-approve -target=module.subnet.aws_internet_gateway.myigw .
 
 
 terraform output values list ---> https://registry.terraform.io/modules/terraform-aws-modules/ec2-instance/aws/latest
+
+dynamic values : https://blog.boltops.com/2020/10/05/terraform-hcl-loops-with-dynamic-block/
+https://www.terraform.io/language/expressions/dynamic-blocks
+
+Note: We can use dynamic for many iterator block, for example ingress, egress, exclusion_filters in datadog_index 
+varaible "exlusion_filter" {
+  type = list(map(type))
+}
+
+in .tfvars file you can mention list of dictionaries
+exclusion_filter = [{name:x, arn = "y"}, {name: "y", arn = "x"}]
+you can call them in below mentiond 
+resource "aws_security_group" "dynamic" {
+  name        = "demo-dynamic"
+  description = "demo-dynamic"
+
+  dynamic "ingress" {
+    for_each = local.ports
+    content {
+      description = "description ${ingress.key}"
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+}
