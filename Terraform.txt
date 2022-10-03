@@ -55,3 +55,25 @@ resource "aws_security_group" "dynamic" {
     }
   }
 }
+
+
+variable exclusion_filter {
+    type = list(map(any))
+    
+}
+
+dynamic "exclusion_filter" {
+  iterator = [name, query, sample_rate]
+  for_each = var.ingress
+  content {
+    name       = name.value
+    is_enabled = true
+    filter {
+      query       = query.value
+      sample_rate = sample_rate.value
+    }
+  }
+
+
+
+}
