@@ -1,0 +1,10 @@
+# this stack the output variable which is produced by another cloudformation_instanc stack
+Resources:
+  Mysubnet:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      CidrBlock: 10.0.2.0/24  
+      VpcId: 
+        Fn::ImportValue: vpc-VPCID
+
+### we have to import only export name
