@@ -1,0 +1,8 @@
+git clone https://github.com/saiboby/tcode.git
+cd tcode/
+git remote add cloudcode https://github.com/saiboby/cloudcode.git
+git subtree add --prefix=subproject/ https://github.com/saiboby/cloudcode.git main
+git commit -am "added new cloudcode subproject"
+git subtree pull --prefix=subproject/ https://github.com/saiboby/cloudcode.git main   (we can pull the data, so that if any changes done in cloudcode repo, those will be added subproject directory)
+
+git subtree push --prefix=subproject/ https://github.com/saiboby/cloudcode.git main   (this is to push all the data cloudcode main project)
