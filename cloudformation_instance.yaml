@@ -1,0 +1,75 @@
+Mappings:
+  AMIMap:
+    Centos:
+      v1: ami-026b57f3c383c2eec
+      v2: ami-06fcefdf3fdb933c6
+    Ubuntu:
+      v1: ami-00b3e95ade0a05b9b
+      v2: ami-0306ea53026b71499
+    Windows:
+      v1: ami-061b9e07a7b2c9847
+      v1: ami-09e04953faaeb9913
+Parameters:
+  InstanceTypeParameter:
+    Type: String  
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - m1.small
+      - m1.large
+    Description: Enter t2.micro, m1.small, or m1.large. Default is t2.micro.
+  EnvType:
+    Description: Environment type.
+    Default: test
+    Type: String
+    AllowedValues:
+      - prod
+      - test
+    ConstraintDescription: must specify prod or test.
+Conditions:
+  CreateProdResources: !Equals 
+    - !Ref EnvType
+    - prod
+  # Azone:
+  #   Type: AWS::EC2::AvailabilityZone::Name
+  # InstanceId:
+  #   Type: AWS::EC2::Instance::Id
+
+
+
+# AWSTemplateFormatVersion: "2010-09-09"
+# Description: A sample template
+
+Resources:
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties: 
+      CidrBlock: 10.0.0.0/16
+  Mysubnet:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      CidrBlock: 10.0.1.0/24  
+      VpcId: !GetAtt MyVPC.VpcId
+  
+
+  MyEC2Instance: #An inline comment
+    Type: "AWS::EC2::Instance"
+    Condition: CreateProdResources
+    Properties: 
+      #ImageId: "ami-00b3e95ade0a05b9b" #Another comment -- This is a Linux AMI
+      ImageId: !FindInMap [AMIMap, Centos, v1]
+      InstanceType: !Ref InstanceTypeParameter
+      KeyName: ecs-key
+      Tags:
+        - Key: Name
+          Value: stack
+        - Key: Type
+          Value: Deployment_Node
+        - Key: Environment
+          Value: Testing
+Outputs:
+  vpcid:
+    Description: The VPCID to use for public web servers
+    Value: !Ref MyVPC
+    Export:
+      Name: !Sub "${AWS::StackName}-VPCID"
