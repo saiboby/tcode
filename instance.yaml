@@ -1,0 +1,142 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: A sample template
+Resources:
+  MyEC2Instance: #An inline comment
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: "ami-026b57f3c383c2eec" #Another comment -- This is a Linux AMI
+      InstanceType: t2.micro
+      KeyName: ecs-key
+      
+      
+AWSTemplateFormatVersion: "2010-09-09"
+Mappings: 
+  RegionMap: 
+    us-east-1:
+      HVM64: ami-0ff8a91507f77f867
+      HVMG2: ami-0a584ac55a7631c0c
+    us-west-1:
+      HVM64: ami-0bdb828fd58c52235
+      HVMG2: ami-066ee5fd4a9ef77f1
+    eu-west-1:
+      HVM64: ami-047bb4163c506cd98
+      HVMG2: ami-0a7c483d527806435
+    ap-northeast-1:
+      HVM64: ami-06cd52961ce9f0d85
+      HVMG2: ami-053cdd503598e4a9d
+    ap-southeast-1:
+      HVM64: ami-08569b978cc4dfa10
+      HVMG2: ami-0be9df32ae9f92309
+Resources: 
+  myEC2Instance: 
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
+      InstanceType: m1.small
+      
+ ################## example of Paramters#################
+ 
+ 
+ Parameters:
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+
+Resources:
+ Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: !Ref LatestAmiId
+      
+      
+##################### Example of conditions ##########################
+#Condition intrinsic functions
+#You can use the following intrinsic functions to define conditions:
+
+Fn::And
+
+Fn::Equals
+
+Fn::If
+
+Fn::Not
+
+Fn::Or
+
+
+##########################################
+
+
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  EnvType:
+    Description: Environment type.
+    Default: test
+    Type: String
+    AllowedValues:
+      - prod
+      - test
+    ConstraintDescription: must specify prod or test.
+Conditions:
+  CreateProdResources: !Equals 
+    - !Ref EnvType
+    - prod
+Resources:
+  EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-0ff8a91507f77f867
+  MountPoint:
+    Type: 'AWS::EC2::VolumeAttachment'
+    Condition: CreateProdResources
+    Properties:
+      InstanceId: !Ref EC2Instance
+      VolumeId: !Ref NewVolume
+      Device: /dev/sdh
+  NewVolume:
+    Type: 'AWS::EC2::Volume'
+    Condition: CreateProdResources
+    Properties:
+      Size: 100
+      AvailabilityZone: !GetAtt 
+        - EC2Instance
+        - AvailabilityZone
+        
+        
+#################### Resouces ###############33
+"Resources" : {
+  "MyEC2Instance" : {
+    "Type" : "AWS::EC2::Instance",
+    "Properties" : {
+      "ImageId" : "ami-0ff8a91507f77f867"
+    }
+  }
+}
+
+
+##################### servers ip####################
+
+"Resources" : {
+  "MyEC2Instance" : {
+    "Type" : "AWS::EC2::Instance",
+    "Properties" : {
+      "ImageId" : "ami-0ff8a91507f77f867"
+    }
+  }
+}
+
+
+Outputs:
+  PublicIP:
+    Description: Public IP of the Instance
+    Value: !GetAtt[ "MyEC2instance", "PublicIp" ]
+    Export:
+      Name: !Sub "${AWS::StackName}-VPCID"
+
+
+
+########## dynamic pciking up the images ################
+https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/walkthrough-custom-resources-lambda-lookup-amiids.html
+
+
+
