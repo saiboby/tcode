@@ -1,0 +1,27 @@
+[17:19] Shaik Bhasha
+pipeline{
+agent { label 'aaa-jenkins2' }
+environment {
+POSTMAN_ENV="tests/postman-tests-dev/ping-${ENVIRONMENT}.postman_environment.json"
+} stages{
+stage('Run test') {
+steps {
+withAWS(
+role: "arn:aws:iam::${env.ACCOUNT}:role/human-role/a206104-Developer",
+region: env.REGION
+){
+sh '''
+echo "...run newman..."
+/var/lib/jenkins/tools/jenkins.plugins.nodejs.tools.NodeJSInstallation/NodeJS_13.6/lib/node_modules/newman/bin/newman.js run "tests/postman-tests-dev/PDG-Tests-release.postman_collection.json" --environment ${POSTMAN_ENV} --reporters json,cli,junit --reporter-json-export PostmanSanityTestResults.json --reporter-junit-export "PostmanSanityTestResults.xml"
+'''
+}
+}
+}
+}
+post {
+always {
+junit 'PostmanSanityTestResults.xml'
+}
+}
+}
+
